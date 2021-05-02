@@ -16,8 +16,9 @@ int main(int argc, char** argv) {
     }
     const char* instanceFile = argv[1];
     SolveGene genepb;
+    int nbMaxRestart = 2;
     genepb.setVerboseMode(true);
-	genepb.setLSparameters(100,1);
+	genepb.setLSparameters(100,nbMaxRestart);
 
     genepb.readInstanceFromFile(instanceFile);
     //display the instances
@@ -35,7 +36,7 @@ int main(int argc, char** argv) {
     
     genepb.simulatedAnnealing();
     
-    cout<< genepb.getnbIterSimulated()<<endl;
+    cout<< nbMaxRestart*genepb.getnbIterSimulated()<<endl;
     
     //Generer tous les resultats de 30 fois de simulatedAnnealing et puis sauvegarder dans un fichier correspondant
     /*clock_t start,end;
