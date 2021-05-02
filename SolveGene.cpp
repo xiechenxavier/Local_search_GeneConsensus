@@ -76,21 +76,6 @@ void SolveGene::printStatus() {
 	cout << endl;
 }
 
-void SolveGene::testGene(){
-    curSol.clear();
-    curSol.push_back(9);
-    curSol.push_back(4);
-    curSol.push_back(5);
-    curSol.push_back(6);
-    curSol.push_back(8);
-    curSol.push_back(2);
-    curSol.push_back(10);
-    curSol.push_back(1);
-    curSol.push_back(3);
-    curSol.push_back(7);
-    computeProbability();
-    printStatus();
-}
 
 bool SolveGene::hillClimbingIter(bool swapMoves, bool revMoves, bool insertMoves){ //to do
 
@@ -378,27 +363,33 @@ void SolveGene::ilsHC(bool swapMoves, bool revMoves, bool insertMoves) {
 	}
 }
 
+// void testSimulatedAnnealing(){
+	
+// }
+
 void SolveGene::simulatedAnnealing() {
-    nbIterSimulated = 0;
-	auto t_start = 5000.0;
-	auto t_end = 1e-8;//10^-8
+	nbIterSimulated = 0;
+	auto t_start = 2.365;
+	auto t_end = 1e-2;//10^-2
 	auto q = 0.8;
-	random_device rd; //random_device 本身是均匀分布整数随机数生成器，通常仅用于播种; 如果是正态分布，那么有两个参数：均值和标准差
-	mt19937 g(rd());//mt19937 是用来生成高性能随机数的算法，mt是Mernne Twister，19937表示最大位数2^19937 -1种可能
-	uniform_int_distribution<> dis_int(0, 2);//在范围 0 ，2 中出现所有的整数都是等可能性的
-	uniform_real_distribution<double> dis_real(0.0,1.0);//这也是一样，所有的小数出现可能性相同,0-1随机数
+	/*random_device lui-même est un générateur de nombres aléatoires entiers uniformément 
+	 distribués, généralement utilisé uniquement pour l'ensemencement ;*/
+	random_device rd; 
+	mt19937 g(rd());//mt19937 est l'algorithme utilisé pour générer des nombres aléatoires de haute performance
+	uniform_int_distribution<> dis_int(0, 2);//Tous les nombres entiers de l'intervalle (0 , 2) ont la même probabilité d'apparaître.
+	uniform_real_distribution<double> dis_real(0.0,1.0);//Toutes les décimales ont la même probabilité de se produire, nombre aléatoire 0-1
 	int mode;
 	bool swapMoves = false, insertMoves = false, revMoves = false;
 	while (t_start > t_end) {
         swapMoves = false; insertMoves = false; revMoves = false;
 		for (int i = 0; i < nbMaxRestart; i++) {
-			vector<int> tmpSol = curSol;
+			vector<int> tmpSol = curSol; // tmpSol permet d'enregistrer la solution courante
 			int tmpSolutionCost = 0;
 			for(int i = 0; i < nbGenes-1; i++) {
                 for(int j=i+1;j<nbGenes;j++)
                     tmpSolutionCost += ProbaIbeforeJ(tmpSol[i]-1,tmpSol[j]-1);
             }
-            //get any mode
+            //Déterminez le mode en obtenant un nombre aléatoire.
 			mode = dis_int(g); // get a int between (0,2) 0,1,2
 			switch (mode) {
 				case 0:
@@ -413,17 +404,19 @@ void SolveGene::simulatedAnnealing() {
 				default:
 					break;
 			}
+			//afficher lequel mode a été déterminé
             cout<<"which move mode applying:"<<swapMoves<<revMoves<<insertMoves<<endl;
-            //if there is no improvement for this move
-			if (!hillClimbingIter(swapMoves, revMoves, insertMoves)) { //if there's an improvement
-				if (exp((currentPossibility-tmpSolutionCost) / t_start) <= dis_real(g)) {
+            //s'il n'y a pas d'amélioration pour ce mode
+			if (!hillClimbingIter(swapMoves, revMoves, insertMoves)) { 
+				//Critère de Metropolis (1953)-Acceptation de nouveaux états avec probabilité
+				if (exp((tmpSolutionCost-currentPossibility) / t_start) <= dis_real(g)) {
 					curSol = tmpSol;
 					computeProbability();
 				} else updateBestSolution();
 			} else updateBestSolution(); 
 		}
 		t_start *= q;
-        //nombre de l'iterations
+		//nombre de l'iterations
         nbIterSimulated++;
 	}
 }

@@ -27,10 +27,18 @@ int main(int argc, char** argv) {
     //test greedyInit
     // genepb.greedyInit();
     // test randomizedConstr
-    // genepb.randomizedConstr();
+    genepb.randomizedConstr();
     // test randomizedGreedy
     // genepb.randomizedGreedy();
-    clock_t start,end;
+    
+    // genepb.randomizedConstr();
+    
+    genepb.simulatedAnnealing();
+    
+    cout<< genepb.getnbIterSimulated()<<endl;
+    
+    //Generer tous les resultats de 30 fois de simulatedAnnealing et puis sauvegarder dans un fichier correspondant
+    /*clock_t start,end;
     vector<float> objective_val; // objective value
     vector<double> simulAnnealtimes ;
     for (auto i = 0; i < 30; i++)
@@ -67,16 +75,11 @@ int main(int argc, char** argv) {
         
         cout << "Done Writing!" << endl;
 
-    }
+    }*/
+
+
+    //Generer tous les resultats de 30 fois de ilsHC et puis sauvegarder dans un fichier correspondant
     // clock_t start,end;
-    // vector<float> objective_val;
-    // vector<int> nbiterLS;
-    // vector<double> ilsHCtimes ;
-    // for (int i = 0; i < 30; i++)
-    // {
-        
-    // }
-    
     /*vector<float> objective_val;
     vector<int> nbiterLS;
     vector<double> ilsHCtimes ;
@@ -89,7 +92,7 @@ int main(int argc, char** argv) {
     }
     
 
-    string filename("./Result/rand_G20_20.txt");
+    string filename("./Result/rand_G20_20.txt"); 
     fstream file_out;
 
     file_out.open(filename, std::ios_base::out);
