@@ -7,7 +7,6 @@
 #include<time.h>
 #include "SolveGene.hpp"
 
-
 using namespace std;
 
 
@@ -31,6 +30,7 @@ void SolveGene::readInstanceFromFile(const string& fileName) {
 			line = strdup(str.c_str());
 			pch = strtok(NULL, " :");
 			nbGenes = atoi(pch);
+			tailleMatrix = atoi(pch); //tailleMatrix
 		} else if (strcmp(pch, "EDGE_WEIGHT_SECTION") == 0){
 			break;
 		}
@@ -217,9 +217,9 @@ bool SolveGene::hillClimbingIter(bool swapMoves, bool revMoves, bool insertMoves
 }
 
 void SolveGene::hillClimbing(bool swapMoves, bool revMoves, bool insertMoves) {
-    countSwap = 0;
-    countInsert = 0;
-    countRev =0;
+    // countSwap = 0;
+    // countInsert = 0;
+    // countRev =0;
 	nbIterLS=0; // nbMaxIterLS = 20
 	bool improving = true;
 	while(improving && nbIterLS< nbMaxIterLS){
@@ -227,10 +227,10 @@ void SolveGene::hillClimbing(bool swapMoves, bool revMoves, bool insertMoves) {
 		nbIterLS++;
 	}
     //to print all results infos
-    cout<<"After "<< nbIterLS << " iterations, optimization is finished"<<endl;
-    cout<<"swapMoves: "<<countSwap<<endl;
-    cout<<"revMoves: "<< countRev<<endl;
-    cout<<"InsertMoves: "<<countInsert<<endl;
+    // cout<<"After "<< nbIterLS << " iterations, optimization is finished"<<endl;
+    // cout<<"swapMoves: "<<countSwap<<endl;
+    // cout<<"revMoves: "<< countRev<<endl;
+    // cout<<"InsertMoves: "<<countInsert<<endl;
 }
 
 //Because we will only use this function after reversed vector,so don't worry about the order mistake
@@ -276,6 +276,17 @@ void SolveGene::computeProbability() {
     // cout<<endl;
 }
 
+void SolveGene::setCurSol(int* sol,int solsize){
+	curSol.resize(solsize);
+	for(int i=0;i<solsize;i++){
+		curSol[i] = sol[i];
+	}
+	setnbGenes(solsize);
+	computeProbability();
+	updateBestSolution();
+	// printStatus();	
+}
+
 //display instance
 void SolveGene::displayInstance() {
 	cout << "nb of cities : " << nbGenes << endl;
@@ -292,6 +303,7 @@ void SolveGene::naiveInit() {
 	curSol.resize(nbGenes);
 	for(int i=0; i < nbGenes; i++) curSol[i]=i+1;
 	computeProbability();
+	updateBestSolution();
     // printStatus();
 }
 

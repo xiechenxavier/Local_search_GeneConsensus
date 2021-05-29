@@ -15,6 +15,7 @@ private:
     //parameters related to the input data
     // Number of Genes
     int nbGenes;
+    int tailleMatrix;
     // Vector/matrix of wi<j between two Gene
     vector<float>  wijMatrix;
 
@@ -47,8 +48,8 @@ private:
     //private methods, only used by solving methods
 	
 	//WARNING: Different Gene rankings, i and j, the wi<j + wj<i = 1 
-    float ProbaIbeforeJ(int i,int j) { return wijMatrix[nbGenes * i+j]; };
-    float sumProba(int i,int j) { return wijMatrix[nbGenes * (curSol[i]-1)+(curSol[j]-1)]; };
+    float ProbaIbeforeJ(int i,int j) { return wijMatrix[tailleMatrix * i+j]; };
+    float sumProba(int i,int j) { return wijMatrix[tailleMatrix * (curSol[i]-1)+(curSol[j]-1)]; };
     // version pour ne pas se soucier des bords?
     //    int distSol(int i1,int i2){return distanceMatrix[nbCities * curSol[i1%nbCities]+curSol[i2%nbCities]];};
 
@@ -56,13 +57,14 @@ private:
     bool checkFeasibility();
 
     bool hillClimbingIter(bool swapMoves, bool revMoves, bool insertMoves);//TODO
+    void setnbGenes(int nbG){nbGenes = nbG;} // set the number of genes
 
     void computeReversedPossibility();
     void reverseGenes();
 
 public:
 
-    void testGene();
+    // void testGene();
     //public methods, to call in external test functions
 
     void updateBestSolution();
@@ -92,10 +94,16 @@ public:
 
     void simulatedAnnealing();//TODO
 
-
+    // vector<float> SeperateWijTable(int first_ind,int last_ind);
+    void setCurSol(int* sol, int solsize);
     /* Reads and displays instance data. */
     void readInstanceFromFile(const string& fileName);
     void displayInstance();
+    
+    void setWijMatrix(vector<float> wijmat) {wijMatrix = wijmat;}
+    int getTailleGenes(){ return tailleMatrix;}
+
+    // vector<float> getWijMatrix() { return wijMatrix;}
 
 };
 
