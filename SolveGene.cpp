@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <random>
 #include <map>
+#include <omp.h>
 #include<time.h>
 #include "SolveGene.hpp"
 
@@ -88,36 +89,46 @@ bool SolveGene::hillClimbingIter(bool swapMoves, bool revMoves, bool insertMoves
     int temp_var = 0; // variable temporaire pour finir l'échange entre deux éléments dans curSol
   
 	if (swapMoves){
-        //second case: between neighbours 
-		for(i1=0; i1 < nbGenes-1 ; i1++){
-			i2=i1+1;
-			temp = sumProba(i2,i1) - sumProba(i1,i2);
-			if (delta < temp ){
-				delta=temp;
-				param1 = i1; // i1 is going to exchange with i2
-				param2 = i2;
-				modeImpr=1; //the way number to improve
+		#pragma omp parallel private(i1,i2)
+		{
+			#pragma omp for
+			//second case: between neighbours 
+			for(i1=0; i1 < nbGenes-1 ; i1++){
+				i2=i1+1;
+				temp = sumProba(i2,i1) - sumProba(i1,i2);
+				if (delta < temp ){
+					delta=temp;
+					param1 = i1; // i1 is going to exchange with i2
+					param2 = i2;
+					modeImpr=1; //the way number to improve
+				}
 			}
 		}
-        // second case: on both sides of at least an element, exchange 
-        for(i1 = 0; i1< nbGenes-2;i1++){
-            for (i2 = i1+2; i2 < nbGenes; i2++)
-            {   
-                temp = 0; // reinitialiser temp
-                for(int x = i1+1;x<i2+1;x++){
-                    temp += sumProba(x,i1) - sumProba(i1,x);
-                }
-                for(int y = i1+1; y<i2;y++){
-                    temp += sumProba(i2,y) - sumProba(y,i2);
-                }
-                if (delta < temp ){
-                    delta=temp;
-                    param1 = i1;
-                    param2 = i2;
-                    modeImpr=1;
-                }
-            }
-        }
+		#pragma omp parallel private(i1,i2,temp)
+		{
+			#pragma omp for
+			// second case: on both sides of at least an element, exchange 
+			for(i1 = 0; i1< nbGenes-2;i1++){
+				for (i2 = i1+2; i2 < nbGenes; i2++)
+				{   
+					temp = 0; // reinitialiser temp
+					#pragma omp reduction(+:temp)
+					for(int x = i1+1;x<i2+1;x++){
+						temp += sumProba(x,i1) - sumProba(i1,x);
+					}
+					#pragma omp reduction(+:temp)
+					for(int y = i1+1; y<i2;y++){
+						temp += sumProba(i2,y) - sumProba(y,i2);
+					}
+					if (delta < temp ){
+						delta=temp;
+						param1 = i1;
+						param2 = i2;
+						modeImpr=1;
+					}
+				}
+			}
+		}
        
 	}
 
@@ -127,19 +138,24 @@ bool SolveGene::hillClimbingIter(bool swapMoves, bool revMoves, bool insertMoves
 		// i2 == i1 + 2 same as swap
 		// i2 == i1 + 3 ...
 		vector<int>::const_iterator first, last;
-		for(i1 = 0; i1 < nbGenes - 3; i1++) {
-			for (i2 = i1 + 2; i2 < nbGenes; i2++) {
-				first = curSol.begin() + i1;
-				last = curSol.begin() + i2 + 1;
-				revSol.resize(i2 - i1 + 1);
-				revSol.assign(first, last);
-				reverseGenes();// firstly reverse and then to compute probability and sub
-				temp = revSolutionProb - subSolutionProb;
-				if (delta < temp ) {
-					delta = temp;
-					param1 = i1;
-					param2 = i2;
-					modeImpr = 2;
+		#pragma omp parallel private(i1,i2,temp,first,last,revSol)
+		{
+			#pragma omp for
+			for(i1 = 0; i1 < nbGenes - 3; i1++) {
+				for (i2 = i1 + 2; i2 < nbGenes; i2++) {
+					first = curSol.begin() + i1;
+					last = curSol.begin() + i2 + 1;
+					revSol.resize(i2 - i1 + 1);
+					revSol.assign(first, last);
+					// #pragma omp threadprivate(revSol)
+					reverseGenes();// firstly reverse and then to compute probability and sub
+					temp = revSolutionProb - subSolutionProb;
+					if (delta < temp ) {
+						delta = temp;
+						param1 = i1;
+						param2 = i2;
+						modeImpr = 2;
+					}
 				}
 			}
 		}
@@ -147,36 +163,43 @@ bool SolveGene::hillClimbingIter(bool swapMoves, bool revMoves, bool insertMoves
 
     if(insertMoves){
         // when i2 < i1, //i1 insert in head when i2 == 0
-        for(i2 =0; i2 < nbGenes-1;i2++){
-            for(i1=i2+1;i1<nbGenes;i1++){
-                temp = 0; //initialize in each round
-                for(int x = i2;x<i1;x++){
-                    temp+= sumProba(i1,x) - sumProba(x,i1);
-                }
-                if(delta < temp){
-                    delta = temp;
-                    param1 = i1; //insert gene
-                    param2 = i2; //insert position
-                    modeImpr = 3;
-                }
-            }
-        }
-
-        // when i1 < i2, //i1 insert
-        for(i2 = nbGenes-1;i2>0;i2--){
-            for(i1 = i2-1;i1>=0;i1--){
-                temp = 0;
-                for(int x=i1+1;x<=i2;x++){
-                    temp+= sumProba(x,i1) - sumProba(i1,x);
-                }
-                if(delta < temp){
-                    delta = temp;
-                    param1 = i1; //insert gene
-                    param2 = i2; //insert position
-                    modeImpr = 3;
-                }
-            }
-        }
+		#pragma omp parallel private(i1,i2,temp)
+		{
+			#pragma omp for
+			for(i2 =0; i2 < nbGenes-1;i2++){
+				for(i1=i2+1;i1<nbGenes;i1++){
+					temp = 0; //initialize in each round
+					for(int x = i2;x<i1;x++){
+						temp+= sumProba(i1,x) - sumProba(x,i1);
+					}
+					if(delta < temp){
+						delta = temp;
+						param1 = i1; //insert gene
+						param2 = i2; //insert position
+						modeImpr = 3;
+					}
+				}
+			}
+		}
+		#pragma omp parallel private(i1,i2,temp)
+		{
+			#pragma omp for
+			// when i1 < i2, //i1 insert
+			for(i2 = nbGenes-1;i2>0;i2--){
+				for(i1 = i2-1;i1>=0;i1--){
+					temp = 0;
+					for(int x=i1+1;x<=i2;x++){
+						temp+= sumProba(x,i1) - sumProba(i1,x);
+					}
+					if(delta < temp){
+						delta = temp;
+						param1 = i1; //insert gene
+						param2 = i2; //insert position
+						modeImpr = 3;
+					}
+				}
+			}
+		}
 
     }
 
@@ -220,12 +243,19 @@ void SolveGene::hillClimbing(bool swapMoves, bool revMoves, bool insertMoves) {
     // countSwap = 0;
     // countInsert = 0;
     // countRev =0;
-	nbIterLS=0; // nbMaxIterLS = 20
+	// nbIterLS=0; // nbMaxIterLS = 20
+
 	bool improving = true;
-	while(improving && nbIterLS< nbMaxIterLS){
-		improving = hillClimbingIter(swapMoves, revMoves, insertMoves);
-		nbIterLS++;
+	for (nbIterLS = 0; nbIterLS<nbMaxIterLS; nbIterLS++)
+	{
+		if (!improving)
+			break;
+		else 
+			improving = hillClimbingIter(swapMoves, revMoves, insertMoves);
+				
 	}
+		
+
     //to print all results infos
     // cout<<"After "<< nbIterLS << " iterations, optimization is finished"<<endl;
     // cout<<"swapMoves: "<<countSwap<<endl;
@@ -237,16 +267,23 @@ void SolveGene::hillClimbing(bool swapMoves, bool revMoves, bool insertMoves) {
 void SolveGene::computeReversedPossibility(){
     revSolutionProb = 0; // the reversed solution probability
 	subSolutionProb = 0; // I think it's the normal order solution probability
-	for(int i = 0; i < revSol.size() - 1; i++){
-        for(int j=i+1;j<revSol.size();j++){
-            revSolutionProb += ProbaIbeforeJ(revSol[i]-1,revSol[j]-1);
-        }
-    }
-     
-	for(int i = revSol.size() - 1; i >= 1; i--) {
-        for(int j=i-1;j>=0;j--){
-            subSolutionProb += ProbaIbeforeJ(revSol[i]-1,revSol[j]-1);
-        }
+	#pragma omp parallel //91.5013 for 4, 57 for 2, 60.7886 s for 1, 64.5349 s for 3
+	{
+		#pragma omp for reduction(+:revSolutionProb)
+		for(int i = 0; i < revSol.size() - 1; i++){
+			for(int j=i+1;j<revSol.size();j++){
+				revSolutionProb += ProbaIbeforeJ(revSol[i]-1,revSol[j]-1);
+			}
+		}
+	}
+    #pragma omp parallel 
+	{
+		#pragma omp for reduction(+:subSolutionProb)
+		for(int i = revSol.size() - 1; i >= 1; i--) {
+			for(int j=i-1;j>=0;j--){
+				subSolutionProb += ProbaIbeforeJ(revSol[i]-1,revSol[j]-1);
+			}
+		}
 	}
 }
 
@@ -267,11 +304,16 @@ void SolveGene::updateBestSolution() {
 //the correct way to calculate: wij*xij
 void SolveGene::computeProbability() {
 	currentPossibility = 0;
-	for(int i=0; i < nbGenes-1; i++){
-        for(int j=i+1;j<nbGenes;j++){
-            currentPossibility += ProbaIbeforeJ(curSol[i]-1,curSol[j]-1);
-        }
-    }    
+	#pragma omp parallel
+	{
+		#pragma omp for reduction(+:currentPossibility)
+		for(int i=0; i < nbGenes-1; i++){
+     		for(int j=i+1;j<nbGenes;j++){
+            	currentPossibility += ProbaIbeforeJ(curSol[i]-1,curSol[j]-1);
+        	}
+    	} 
+	}
+   
         // cout<< ProbaIbeforeJ(curSol[i]-1,curSol[i+1]-1)<<" ";
     // cout<<endl;
 }
@@ -330,7 +372,7 @@ void SolveGene::greedyInit() {
 		}
 	}
 	computeProbability();
-    printStatus();
+    // printStatus();
 }
 
 //randomizedConstr
@@ -342,7 +384,7 @@ void SolveGene::randomizedConstr() {
 	    curSol.clear();
 		curSol.resize(nbGenes);
 		for(int i=0; i < nbGenes; i++) curSol[i]=i+1;
-		shuffle(begin(curSol), end(curSol) - 1, g);
+		shuffle(begin(curSol), end(curSol), g);
 		computeProbability();
 		updateBestSolution();
     // computeProbability();

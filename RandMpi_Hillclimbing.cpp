@@ -19,36 +19,39 @@ using namespace std;
 void merge_ranking(int tab1[],int taille1,int tab2[], int taille2, SolveGene genepb0){
     //create an array to contain tab1 and tab2 
     int* mergedTab = new int[taille1+taille2];
+    //remplir les taille1 premiers éléments du mergedTab 
     for(int i=0;i<taille1;i++){
         mergedTab[i] = tab1[i];
     }
+    //remplir le taille2 premiers éléments du mergedTab
     for(int j = taille1;j<taille1+taille2;j++){
         mergedTab[j] = tab2[j-taille1];
     }
+    //Trier le tableau des gènes mergedTab par hill-climbing
     genepb0.setCurSol(mergedTab,taille1+taille2);
     genepb0.hillClimbing(true,true,true);
     vector<int> curSolMerged = genepb0.getCurSol(); // get the merged array
+    //tab1 garde les premiers n/p éléments du mergedTab 
     for(int i=0;i<taille1;i++){
         tab1[i] = curSolMerged[i];
     }
+    //tab2 garde les derniers n/p éléments du mergedTab
     for(int j=taille1;j<curSolMerged.size();j++){
         tab2[j-taille1] = curSolMerged[j];
     }
+    //libérer le mémoire du mergedTab
     delete [] mergedTab;
 
 }
-
 void print_tab_distrib_gather(int tabLocal[],int tailleLocal,SolveGene genepb0) //这个函数的作用是把所有tabLocal在进程0处整合成tabGlobal然后打印
      {
-
 	int id, p,j;
 	MPI_Comm_size(MPI_COMM_WORLD, &p);
 	MPI_Comm_rank(MPI_COMM_WORLD, &id);
 	MPI_Status status;
-
+    //tableau fusionné et complète
 	int* tabGlobal;
 	int tailleGlobal = tailleLocal * p;
-
 	tabGlobal = new int[tailleGlobal];
 
 	MPI_Gather(tabLocal, tailleLocal, MPI_INT,tabGlobal, tailleLocal,MPI_INT, 0, MPI_COMM_WORLD);
@@ -62,9 +65,7 @@ void print_tab_distrib_gather(int tabLocal[],int tailleLocal,SolveGene genepb0) 
             genepb0.setCurSol(tabGlobal,tailleGlobal);
             cout<< "best cout is:"<< genepb0.getCurrentProbability()<<endl; 
 		}
-    
 	delete [] tabGlobal;
-
 }
 
 void init_tab_random(int tabLocal[],int tailleLocal,SolveGene genepb0)
